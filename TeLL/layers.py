@@ -1012,7 +1012,8 @@ class ReshapeLayer(Layer):
             prev_layers += [self]
             incoming = self.incoming(prev_layers=prev_layers, **kwargs)
             with tf.variable_scope(self.layer_scope):
-                self.out = tf.reshape(incoming, self.shape)
+                shape = [-1 if i is None else i for i in self.shape]
+                self.out = tf.reshape(incoming, shape)
         
         return self.out
     
