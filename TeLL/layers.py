@@ -987,7 +987,10 @@ class ReshapeLayer(Layer):
             self.incoming, self.incoming_shape = get_input(incoming)
             
             self.shape = shape
-            self.out = tf.zeros(self.get_output_shape())
+            try:
+                self.out = tf.zeros(self.get_output_shape())
+            except:
+                pass
             self.name = name
     
     def get_output_shape(self):
