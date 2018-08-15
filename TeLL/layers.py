@@ -214,7 +214,10 @@ def conv2d(x, W, strides=(1, 1, 1, 1), padding='SAME', dilation_rate=(1, 1), nam
             else:
                 x_flat = tf.reshape(x, [x_shape[0] * x_shape[1]] + x_shape[2:])
             conv = conv_fct(x_flat)
-            conv = tf.reshape(conv, [tensor_shape[0], tensor_shape[1]] + conv.get_shape().as_list()[1:])
+            if x_shape[0] == -1 or x_shape[1] == -1:
+                conv = tf.reshape(conv, [tensor_shape[0], tensor_shape[1]] + conv.get_shape().as_list()[1:])
+            else:
+                conv = tf.reshape(conv, [x_shape[0], x_shape[1]] + conv.get_shape().as_list()[1:])
         else:
             conv = conv_fct(x)
     return conv
@@ -311,7 +314,10 @@ def maxpool2D(x, ksize, strides, padding, data_format):
         else:
             x_flat = tf.reshape(x, [x_shape[0] * x_shape[1]] + x_shape[2:])
         maxpool = tf.nn.max_pool(x_flat, ksize=ksize, strides=strides, padding=padding, data_format=data_format)
-        maxpool = tf.reshape(maxpool, [tensor_shape[0], tensor_shape[1]] + maxpool.get_shape().as_list()[1:])
+        if x_shape[0] == -1:
+            maxpool = tf.reshape(maxpool, [tensor_shape[0], tensor_shape[1]] + maxpool.get_shape().as_list()[1:])
+        else:
+            maxpool = tf.reshape(maxpool, [x_shape[0], x_shape[1]] + maxpool.get_shape().as_list()[1:])
     else:
         maxpool = tf.nn.max_pool(x, ksize=ksize, strides=strides, padding=padding, data_format=data_format)
     return maxpool
