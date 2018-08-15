@@ -208,12 +208,13 @@ def conv2d(x, W, strides=(1, 1, 1, 1), padding='SAME', dilation_rate=(1, 1), nam
     with tf.variable_scope(name):
         if len(x_shape) > 4:
             x_shape = [s if isinstance(s, int) else -1 for s in x.get_shape().as_list()]
+            tensor_shape = tf.shape(x)
             if x_shape[0] == -1 or x_shape[1] == -1:
-                x_flat = tf.reshape(x, [-1] + x_shape[2:])
+                x_flat = tf.reshape(x, [tensor_shape[0] * tensor_shape[1]] + x_shape[2:])
             else:
                 x_flat = tf.reshape(x, [x_shape[0] * x_shape[1]] + x_shape[2:])
             conv = conv_fct(x_flat)
-            conv = tf.reshape(conv, x_shape[:2] + conv.get_shape().as_list()[1:])
+            conv = tf.reshape(conv, [tensor_shape[0], tensor_shape[1]] + conv.get_shape().as_list()[1:])
         else:
             conv = conv_fct(x)
     return conv
@@ -301,15 +302,16 @@ def maxpool2D(x, ksize, strides, padding, data_format):
     """
     x_shape = x.get_shape().as_list()
     x_shape = [s if isinstance(s, int) else -1 for s in x_shape]
+    tensor_shape = tf.shape(x)
     
     # Flatten matrix in first dimensions if necessary (join samples and sequence positions)
     if len(x_shape) > 4:
         if x_shape[0] == -1:
-            x_flat = tf.reshape(x, [-1] + x_shape[2:])
+            x_flat = tf.reshape(x, [tensor_shape[0] * tensor_shape[1]] + x_shape[2:])
         else:
             x_flat = tf.reshape(x, [x_shape[0] * x_shape[1]] + x_shape[2:])
         maxpool = tf.nn.max_pool(x_flat, ksize=ksize, strides=strides, padding=padding, data_format=data_format)
-        maxpool = tf.reshape(maxpool, x_shape[:2] + maxpool.get_shape().as_list()[1:])
+        maxpool = tf.reshape(maxpool, [tensor_shape[0], tensor_shape[1]] + maxpool.get_shape().as_list()[1:])
     else:
         maxpool = tf.nn.max_pool(x, ksize=ksize, strides=strides, padding=padding, data_format=data_format)
     return maxpool
@@ -1011,9 +1013,13 @@ class ReshapeLayer(Layer):
         if self not in prev_layers:
             prev_layers += [self]
             incoming = self.incoming(prev_layers=prev_layers, **kwargs)
+            tensor_shape = tf.shape(incoming)
             with tf.variable_scope(self.layer_scope):
                 shape = [-1 if i is None else i for i in self.shape]
-                self.out = tf.reshape(incoming, shape)
+                if shape[0] == -1 and shape[1] == -1:
+                    self.out = tf.reshape(incoming, [tensor_shape[0], tensor_shape[1]] + shape[2:])
+                else:
+                    self.out = tf.reshape(incoming, shape)
         
         return self.out
     
